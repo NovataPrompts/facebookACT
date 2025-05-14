@@ -1,0 +1,40 @@
+[project]
+name = "act"
+version = "0.1.0"
+description = "ACT project dependencies"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pyyaml",
+    "pint"
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.11.9",
+]
+
+[tool.ruff]
+# Set the Python version Ruff should target.
+target-version = "py312"
+# Set a standard line length.
+line-length = 88
+
+[tool.ruff.lint]
+# Start with Pyflakes (F) rules. These catch common errors like unused imports
+# or undefined names and are less likely to cause many errors on an initial run.
+select = ["F"]
+
+# To enable more comprehensive linting, you can extend the selection.
+# For example, to add Pycodestyle (E) error checks and isort (I) for import sorting:
+# extend_select = ["E", "I"]
+#
+# If you extend the selection, you might want to ignore certain rules initially.
+# For example, to ignore line-too-long errors (E501):
+ignore = [
+    "F401",  # module imported but unused
+    "F841",  # local variable '...' is assigned to but never used
+    "F403",  # from ... import * used; unable to detect undefined names
+    "F405",  # '...' may be undefined, or defined from star imports
+    "F541",  # f-string without any placeholders
+    # Add other specific F error codes here if reported by `ruff check`
+]

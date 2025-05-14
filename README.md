@@ -12,10 +12,12 @@ If you use ACT for your research, please consider contributing the resulting sys
 
 ## Quick Start
 
-To get started, first clone [ACT](https://github.com/facebookresearch/ACT) and make sure you have the following third-party Python dependencies:
-* [pint](https://pint.readthedocs.io/en/stable/) - `pip install pint`
-* [pyyaml](https://pypi.org/project/PyYAML/) - `pip install pyyaml`
-* Make sure you have Python 3.12.9
+To get started, first clone [ACT](https://github.com/facebookresearch/ACT). This project uses `uv` to manage dependencies.
+Ensure you have Python 3.12.9 installed.
+To install the required dependencies, run the following command in the root directory of the project:
+```bash
+uv sync
+```
 ACT can be used either as a standalone binary or an API where you can program your codebase and use cases against.
 The code is built on `Python 3.12.9`.
 
@@ -24,7 +26,7 @@ The code is built on `Python 3.12.9`.
 To use ACT as a standalone binary tool:
 
 1. Go to the ACT root directory
-2. From the command line, run `act_model.py -m boms/dellr740.yaml` which should run an existing specification for the Dell power edge server
+2. From the command line, run `uv run python -m act.act_model -m act/boms/dellr740.yaml` which should run an existing specification for the Dell power edge server
 3. This should export the results to a report yaml file where you can inspect the results
 
 For the full list of command line arguments, use `python -m act.act_model --help`.
