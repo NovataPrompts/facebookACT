@@ -5,3 +5,8 @@ materials:
 
   # from https://international-aluminium.org/landing/as-well-as-aluminium-recycling-saving-95-of-the-energy-needed-for-primary-aluminium-production-the-recycling-process-saves-a-similar-percentage-in-greenhouse-gas-emissions/
   alumnimum: 15.1 kg / kg
+
+  # from https://www.climatiq.io/data/emission-factor/69497438-c3dd-4345-a16e-9941cb8f8bfb
+  # Emission intensity of concrete (average UK cement replacement rate, total cementitious content 380 kg per m3): 352.4 kg CO2e / m3
+  # Concrete density (typical): ~2,400 kg/m3, so per kg: 352.4 / 2400 ≈ 0.1477 kg CO2e / kg
+  concrete: 0.148 kg / kg

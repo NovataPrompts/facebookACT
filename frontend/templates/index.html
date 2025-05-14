@@ -1,0 +1,257 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ACT Model Frontend</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f8fb; }
+        .container { max-width: 700px; margin: 2em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+        h1 { text-align: center; color: #2a4d69; }
+        .input-form fieldset { border: 1px solid #b0c4de; border-radius: 6px; margin-bottom: 1em; padding: 1em; }
+        .input-form legend { color: #2a4d69; font-weight: bold; }
+        .input-form label { display: inline-block; width: 180px; margin-bottom: 0.3em; }
+        .input-form input, .input-form select { width: 200px; padding: 0.3em; margin-bottom: 0.5em; border-radius: 4px; border: 1px solid #b0c4de; }
+        .input-form .hint { color: #888; font-size: 0.9em; margin-left: 0.5em; }
+        .input-form button { background: #2a4d69; color: #fff; border: none; border-radius: 4px; padding: 0.7em 1.5em; font-size: 1.1em; cursor: pointer; margin-top: 1em; }
+        .input-form button:hover { background: #41729f; }
+        .error { color: #b22222; background: #ffeaea; border: 1px solid #f5c2c7; padding: 0.7em; border-radius: 5px; margin-top: 1em; }
+        .report { background: #eaf6ff; border-radius: 8px; padding: 1.5em; margin-top: 2em; box-shadow: 0 1px 4px #0001; }
+        .total-carbon { font-size: 2em; color: #1b7c3a; font-weight: bold; margin-bottom: 1em; }
+        .carbon-table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        .carbon-table th, .carbon-table td { border: 1px solid #b0c4de; padding: 0.5em 1em; text-align: left; }
+        .carbon-table th { background: #dbeafe; }
+        .carbon-table tr:nth-child(even) { background: #f4f8fb; }
+        #materialsTable th, #materialsTable td {
+            padding: 0.3em 0.2em;
+            text-align: left;
+            vertical-align: middle;
+        }
+        #materialsTable input, #materialsTable select {
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        #materialsTable button.remove-material {
+            padding: 0.3em 0.5em;
+            font-size: 0.95em;
+            background: #2a4d69;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #materialsTable button.remove-material:hover {
+            background: #41729f;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>ACT Model Carbon Estimator</h1>
+    <form method="post" class="input-form" id="carbonForm" novalidate>
+        <fieldset>
+            <legend>Device Parameters</legend>
+            <label for="logic_area">Logic Area:</label>
+            <input type="text" id="logic_area" name="logic_area" value="{{ user_input.logic_area }}" required pattern="^\\d+(\\.\\d+)?\\s*(mm2|cm2|m2)$">
+            <span class="hint">e.g. 100 mm2</span><br>
+
+            <label for="logic_process">Logic Process:</label>
+            <select id="logic_process" name="logic_process">
+                {% for name, value in logic_processes %}
+                <option value="{{ name }}" {% if user_input.logic_process == name %}selected{% endif %}>{{ name }} ({{ value }})</option>
+                {% endfor %}
+            </select>
+            <span class="hint">e.g. N7</span><br>
+
+            <label for="dram_process">DRAM Process:</label>
+            <select id="dram_process" name="dram_process">
+                {% for name, value in dram_processes %}
+                <option value="{{ name }}" {% if user_input.dram_process == name %}selected{% endif %}>{{ name }} ({{ value }})</option>
+                {% endfor %}
+            </select>
+            <span class="hint">e.g. DDR4_10NM</span><br>
+
+            <label for="ssd_process">SSD Process:</label>
+            <select id="ssd_process" name="ssd_process">
+                {% for name, value in ssd_processes %}
+                <option value="{{ name }}" {% if user_input.ssd_process == name %}selected{% endif %}>{{ name }} ({{ value }})</option>
+                {% endfor %}
+            </select>
+            <span class="hint">e.g. NAND_10NM</span><br>
+
+            <label for="dram_capacity">DRAM Capacity:</label>
+            <input type="text" id="dram_capacity" name="dram_capacity" value="{{ user_input.dram_capacity }}" required pattern="^\\d+(\\.\\d+)?\\s*GB$">
+            <span class="hint">e.g. 16 GB</span><br>
+
+            <label for="ssd_capacity">SSD Capacity:</label>
+            <input type="text" id="ssd_capacity" name="ssd_capacity" value="{{ user_input.ssd_capacity }}" required pattern="^\\d+(\\.\\d+)?\\s*GB$">
+            <span class="hint">e.g. 512 GB</span><br>
+        </fieldset>
+        <fieldset>
+            <legend>Operational Parameters</legend>
+            <label for="op_power">Operating Power:</label>
+            <input type="text" id="op_power" name="op_power" value="{{ user_input.op_power }}" required pattern="^\\d+(\\.\\d+)?\\s*W$">
+            <span class="hint">e.g. 100 W</span><br>
+
+            <label for="duty_cycle">Duty Cycle:</label>
+            <input type="number" step="0.01" min="0" max="1" id="duty_cycle" name="duty_cycle" value="{{ user_input.duty_cycle }}" required>
+            <span class="hint">0.0 - 1.0</span><br>
+
+            <label for="hw_lifetime">Hardware Lifetime:</label>
+            <input type="text" id="hw_lifetime" name="hw_lifetime" value="{{ user_input.hw_lifetime }}" required pattern="^\\d+(\\.\\d+)?\\s*(year|years|yr|yrs|month|months)$">
+            <span class="hint">e.g. 2 year</span><br>
+
+            <label for="op_ci">Operational Carbon Intensity Location:</label>
+            <select id="op_ci" name="op_ci">
+                <option value="USA" {% if user_input.op_ci == 'USA' %}selected{% endif %}>USA</option>
+                <option value="EU" {% if user_input.op_ci == 'EU' %}selected{% endif %}>EU</option>
+                <option value="JAPAN" {% if user_input.op_ci == 'JAPAN' %}selected{% endif %}>JAPAN</option>
+                <option value="TAIWAN" {% if user_input.op_ci == 'TAIWAN' %}selected{% endif %}>TAIWAN</option>
+                <option value="CHINA" {% if user_input.op_ci == 'CHINA' %}selected{% endif %}>CHINA</option>
+            </select>
+        </fieldset>
+        <fieldset>
+            <legend>Add Materials</legend>
+            <div style="overflow-x:auto;">
+            <table id="materialsTable" style="width:100%; min-width:600px; table-layout:fixed;">
+                <thead>
+                    <tr>
+                        <th style="width:22%">Name</th>
+                        <th style="width:22%">Category</th>
+                        <th style="width:22%">Type</th>
+                        <th style="width:22%">Weight</th>
+                        <th style="width:12%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% set mat_count = user_input.material_names|length if user_input.material_names else 1 %}
+                {% for i in range(mat_count) %}
+                <tr>
+                    <td><input type="text" name="material_name" value="{{ user_input.material_names[i] if user_input.material_names and user_input.material_names|length > i else '' }}" style="width:95%"></td>
+                    <td>
+                        <select name="material_category" style="width:95%">
+                        {% for val, label in material_categories %}
+                            <option value="{{ val }}" {% if user_input.material_categories and user_input.material_categories|length > i and user_input.material_categories[i] == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select name="material_type" style="width:95%">
+                        {% for val, label in material_types %}
+                            <option value="{{ val }}" {% if user_input.material_types and user_input.material_types|length > i and user_input.material_types[i] == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                        </select>
+                    </td>
+                    <td><input type="text" name="material_weight" value="{{ user_input.material_weights[i] if user_input.material_weights and user_input.material_weights|length > i else '' }}" style="width:95%"></td>
+                    <td><button type="button" class="remove-material" onclick="removeMaterialRow(this)" style="width:90%">Remove</button></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            <button type="button" onclick="addMaterialRow()" style="margin-top:0.7em;">Add Material</button>
+            <span class="hint">Weight e.g. 500 g</span>
+        </fieldset>
+        <button type="submit">Estimate Carbon</button>
+    </form>
+
+    <script>
+    document.getElementById('carbonForm').addEventListener('submit', function(e) {
+        let form = e.target;
+        let valid = true;
+        let messages = [];
+
+        // Logic Area
+        let logicArea = form.logic_area.value.trim();
+        if (!/^\d+(\.\d+)?\s*(mm2|cm2|m2)$/.test(logicArea)) {
+            valid = false;
+            messages.push('Logic Area must be a number followed by mm2, cm2, or m2 (e.g. 100 mm2)');
+        }
+        // Logic Process
+        let logicProcess = form.logic_process.value.trim();
+        if (!/^N\d+$/.test(logicProcess)) {
+            valid = false;
+            messages.push('Logic Process must be in the form N7, N5, etc.');
+        }
+        // DRAM Capacity
+        let dramCapacity = form.dram_capacity.value.trim();
+        if (!/^\d+(\.\d+)?\s*GB$/.test(dramCapacity)) {
+            valid = false;
+            messages.push('DRAM Capacity must be a number followed by GB (e.g. 16 GB)');
+        }
+        // SSD Capacity
+        let ssdCapacity = form.ssd_capacity.value.trim();
+        if (!/^\d+(\.\d+)?\s*GB$/.test(ssdCapacity)) {
+            valid = false;
+            messages.push('SSD Capacity must be a number followed by GB (e.g. 512 GB)');
+        }
+        // Operating Power
+        let opPower = form.op_power.value.trim();
+        if (!/^\d+(\.\d+)?\s*W$/.test(opPower)) {
+            valid = false;
+            messages.push('Operating Power must be a number followed by W (e.g. 100 W)');
+        }
+        // Duty Cycle
+        let dutyCycle = parseFloat(form.duty_cycle.value);
+        if (isNaN(dutyCycle) || dutyCycle < 0 || dutyCycle > 1) {
+            valid = false;
+            messages.push('Duty Cycle must be a number between 0 and 1.');
+        }
+        // Hardware Lifetime
+        let hwLifetime = form.hw_lifetime.value.trim();
+        if (!/^\d+(\.\d+)?\s*(year|years|yr|yrs|month|months)$/.test(hwLifetime)) {
+            valid = false;
+            messages.push('Hardware Lifetime must be a number followed by year(s) or month(s) (e.g. 2 year)');
+        }
+
+        if (!valid) {
+            e.preventDefault();
+            alert(messages.join('\n'));
+        }
+    });
+
+    function addMaterialRow() {
+        var table = document.getElementById('materialsTable').getElementsByTagName('tbody')[0];
+        var newRow = table.rows[0].cloneNode(true);
+        // Clear values
+        Array.from(newRow.querySelectorAll('input')).forEach(function(input) { input.value = ''; });
+        Array.from(newRow.querySelectorAll('select')).forEach(function(select) { select.selectedIndex = 0; });
+        table.appendChild(newRow);
+    }
+    function removeMaterialRow(btn) {
+        var row = btn.closest('tr');
+        var table = row.parentNode;
+        if (table.rows.length > 1) {
+            table.removeChild(row);
+        } else {
+            // If only one row, just clear its values
+            Array.from(row.querySelectorAll('input')).forEach(function(input) { input.value = ''; });
+            Array.from(row.querySelectorAll('select')).forEach(function(select) { select.selectedIndex = 0; });
+        }
+    }
+    </script>
+
+    {% if error_message %}
+        <div class="error">{{ error_message }}</div>
+    {% endif %}
+
+    {% if report_data %}
+        <div class="report">
+            <h2>Total Carbon Estimate</h2>
+            <div class="total-carbon">{{ report_data.total_carbon }}</div>
+            <h3>Breakdown by Category</h3>
+            <table class="carbon-table">
+                <thead>
+                    <tr><th>Category</th><th>Carbon</th></tr>
+                </thead>
+                <tbody>
+                {% for cat, val in report_data.by_category.items() %}
+                    <tr><td>{{ cat }}</td><td>{{ val }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+</body>
+</html>

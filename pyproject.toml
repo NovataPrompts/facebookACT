@@ -5,7 +5,8 @@ description = "ACT project dependencies"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "pyyaml",
-    "pint"
+    "pint",
+    "flask>=3.1.1",
 ]
 
 [dependency-groups]
