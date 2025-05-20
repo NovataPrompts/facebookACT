@@ -53,7 +53,11 @@ def index():
         ('BATTERY', 'Battery'),
     ]
     # Dynamically build allowed material types from the enum (excluding NA)
-    material_types = [(mt.name, mt.value.title()) for mt in model.materials_model.MaterialType if mt.name != 'NA']
+    material_types = []
+    for member in model.materials_model.MaterialType: # Iterate directly over the Enum
+        if member.name != 'NA':
+            material_types.append((member.name, member.value.title()))
+
     user_input = {
         'logic_area': request.form.get('logic_area', '100 mm2'),
         'logic_process': request.form.get('logic_process', logic_processes[0][0]),
@@ -67,7 +71,8 @@ def index():
         'op_ci': request.form.get('op_ci', 'USA'),
         'material_name': request.form.get('material_name', ''),
         'material_category': request.form.get('material_category', material_categories[0][0]),
-        'material_type': request.form.get('material_type', material_types[0][0]),
+        # Ensure material_types is not empty before accessing its first element
+        'material_type': request.form.get('material_type', material_types[0][0] if material_types else ''),
         'material_weight': request.form.get('material_weight', ''),
     }
 
@@ -114,22 +119,25 @@ def index():
                 },
             }
             materials = {}
-            for name, cat, typ, wt in zip(material_names, material_categories_input, material_types_input, material_weights):
+            for name, cat, typ_name, wt in zip(material_names, material_categories_input, material_types_input, material_weights):
                 if name and wt:
                     try:
-                        # typ is 'STEEL' (name from form)
-                        mat_type = model.materials_model.MaterialType[typ] # mat_type is an enum member, e.g., MaterialType.STEEL
-                    except KeyError:
-                        continue  # skip invalid types
+                        # typ_name is 'STEEL' (name from form)
+                        # Access enum member by its name using getattr
+                        mat_type = getattr(model.materials_model.MaterialType, typ_name)
+                    except (KeyError, AttributeError):
+                        # Fallback or error handling if typ_name is not a valid member name
+                        app.logger.warning(f"Invalid material type name: {typ_name}. Skipping.")
+                        continue
                     if mat_type.name == 'NA': # Check name for NA
                         continue  # skip NA types
                     materials[name] = {
                         'category': ComponentCategory[cat].value,
-                        'type': mat_type.value,  # Use the enum member's value (e.g., 'steel')
+                        'type': mat_type,  # Use the enum member itself
                         'weight': wt,
                     }
             # Instantiate BOM with the shared material_type_enum
-            bom = BOM(silicon=silicon, materials=materials, material_type=model.materials_model.MaterialType)
+            bom_instance = BOM(silicon=silicon, materials=materials, material_type=model.materials_model.MaterialType)
 
             # Parse other parameters
             op_power = units(user_input['op_power'])
@@ -137,7 +145,8 @@ def index():
             hw_lifetime = units(user_input['hw_lifetime'])
             op_ci = getattr(EnergyLocation, user_input['op_ci']) if hasattr(EnergyLocation, user_input['op_ci']) else EnergyLocation.USA
 
-            total_carbon = model.get_carbon(bom=bom, op_power=op_power, op_ci=op_ci, duty_cycle=duty_cycle, hw_lifetime=hw_lifetime)
+            # Pass the BOM instance directly
+            total_carbon = model.get_carbon(bom=bom_instance, op_power=op_power, op_ci=op_ci, duty_cycle=duty_cycle, hw_lifetime=hw_lifetime)
             report_data = {
                 'total_carbon': str(total_carbon.total()),
                 'by_category': {src.name: str(total_carbon.partial(src)) for src in total_carbon.carbon_by_type},
